@@ -1,34 +1,56 @@
 import os
+import pandas as pd
 import torchaudio
 
-# Set path to data directory
-data_dir = "path/to/TIMIT/data/TRAIN"  # Adjust the path accordingly
+# Set paths
+data_dir = "TIMIT/data"  # Update this to the actual path
+csv_path = "TIMIT/preprocessed_train.csv"  # Update this to the path of the CSV file
 
-def load_timit_sample(file_info):
-    # Load audio
-    audio_path = os.path.join(data_dir, file_info['path_from_data_dir'])
-    waveform, sample_rate = torchaudio.load(audio_path)
+
+# Load the CSV file containing file metadata
+metadata_df = pd.read_csv(csv_path)
+
+# Define a function to load a sample given the metadata row
+def load_timit_sample(row):
+    sample = {}
+    print(row['path_from_data_dir'])
+    # Load audio file if available
+    if row['is_audio']:
+        audio_path = os.path.join(data_dir, row['path_from_data_dir'])
+        waveform, sample_rate = torchaudio.load(audio_path)
+        sample['audio'] = (waveform, sample_rate)
     
-    # Load transcriptions
-    transcriptions = {}
-    for file_type in ['is_word_file', 'is_phonetic_file', 'is_sentence_file']:
-        if file_info[file_type]:
-            transcription_path = os.path.join(data_dir, file_info['path_from_data_dir'].replace(".WAV", ".PHN" if file_type == 'is_phonetic_file' else ".WRD" if file_type == 'is_word_file' else ".TXT"))
-            with open(transcription_path, "r") as f:
-                transcriptions[file_type] = f.read().strip()
+    # Load phonetic transcription if available
+    if row['is_phonetic_file']=='TRUE':
+        phonetic_path = os.path.join(data_dir, row['path_from_data_dir'].replace(".WAV", ".PHN"))
+        with open(phonetic_path, 'r') as f:
+            phonetic_transcription = f.readlines()
+        sample['phonetic'] = phonetic_transcription
     
-    return waveform, sample_rate, transcriptions
+    # Load word transcription if available
+    if row['is_word_file']:
+        word_path = os.path.join(data_dir, row['path_from_data_dir'].replace(".WAV", ".WRD"))
+        with open(word_path, 'r') as f:
+            word_transcription = f.readlines()
+        sample['word'] = word_transcription
+    
+    # Load sentence transcription if available
+    if row['is_sentence_file']:
+        sentence_path = os.path.join(data_dir, row['path_from_data_dir'].replace(".WAV", ".TXT"))
+        with open(sentence_path, 'r') as f:
+            sentence_transcription = f.read().strip()
+        sample['sentence'] = sentence_transcription
+    
+    return sample
 
-# Example to load one sample
-file_info = {
-    "path_from_data_dir": "DR4/MMDM0/SI681.WAV",  # Example path
-    "is_audio": True,
-    "is_word_file": False,
-    "is_phonetic_file": False,
-    "is_sentence_file": True
-}
-waveform, sample_rate, transcriptions = load_timit_sample(file_info)
+# Iterate through the entire dataset and load samples
+dataset = []
+for _, row in metadata_df.iterrows():
+    # Only load if it's an audio file; transcriptions will follow the audio file
+    if pd.isna(row['path_from_data_dir']):
+        continue
+    if row['is_audio']:
+        sample = load_timit_sample(row)
+        dataset.append(sample)
 
-print("Audio Waveform:", waveform)
-print("Sample Rate:", sample_rate)
-print("Transcriptions:", transcriptions)
+print(f"Loaded {len(dataset)} samples from the TIMIT dataset.")
