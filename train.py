@@ -36,23 +36,29 @@ samples = [prepare_dataset(row) for _, row in metadata_df.iterrows() if row['is_
 # Create a Dataset from the samples
 timit_dataset = Dataset.from_pandas(pd.DataFrame(samples))
 
+print(f"dataset loaded with {len(timit_dataset)}entries")
 
 # Load Wav2Vec2 processor and model
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
 
-# Preprocess function to convert audio and text to Wav2Vec2-compatible format
 def preprocess(batch):
-    audio = batch["audio"]
-    inputs = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt").input_values
-    batch["input_values"] = inputs[0]
-    batch["labels"] = processor(batch["transcription"], return_tensors="pt", padding=True).input_ids[0]
+    audio_paths = batch["audio"]
+    audio_samples = []
+    
+    for audio_path in audio_paths:
+        waveform, sample_rate = torchaudio.load(audio_path)
+        audio_samples.append(waveform.squeeze().numpy().tolist())  # Convert to list
+    
+    inputs = processor(audio_samples, sampling_rate=batch["sample_rate"], return_tensors="pt", padding=True)
+    batch["input_values"] = inputs.input_values  # Keep as tensor
+    batch["labels"] = processor(batch["words"], return_tensors="pt", padding=True, truncation=True).input_ids[0]
     return batch
 
-# Apply preprocessing to dataset
-timit_dataset = timit_dataset.map(preprocess)
 
-# Define training arguments and Trainer
+
+# Make sure to preprocess your dataset accordingly
+timit_dataset = timit_dataset.map(preprocess, remove_columns=["audio", "words"])
 
 training_args = TrainingArguments(
     output_dir="./wav2vec2_timit",
