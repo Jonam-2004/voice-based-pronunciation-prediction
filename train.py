@@ -3,41 +3,37 @@ import pandas as pd
 import torchaudio
 from datasets import Dataset
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
+from transformers import TrainingArguments, Trainer
+
 
 data_dir = "TIMIT/data"
 csv_path = "TIMIT/preprocessed_train.csv"
 metadata_df = pd.read_csv(csv_path)
 
-# Define a function to load audio and transcription data
+# Define a function to load a sample given the metadata row
 def prepare_dataset(row):
-    audio_path = os.path.join(data_dir, row['path_from_data_dir'])
-    waveform, sample_rate = torchaudio.load(audio_path)
-    if sample_rate != 16000:
-        waveform = torchaudio.transforms.Resample(sample_rate, 16000)(waveform)
+    sample = {}
     
-    # Extract transcription from the .WRD or .PHN file
-    transcription = ""
-    word_path = audio_path.replace(".WAV.wav", ".WRD")  # Replace extension to find transcription
-    if os.path.exists(word_path):
-        with open(word_path, 'r', encoding='utf-8', errors='ignore') as f:  # Ignore unsupported characters
-            words = [line.strip().split()[2] for line in f.readlines() if len(line.split())>=3]  # Take the word column
-            transcription = " ".join(words)  # Join all words in the file
-    else:
-        # Fall back to phonetic transcription if word transcription is not available
-        phonetic_path = audio_path.replace(".WAV.wav", ".PHN")
-        if os.path.exists(phonetic_path):
-            with open(phonetic_path, 'r', encoding='utf-8', errors='ignore') as f:  # Ignore unsupported characters
-                phonemes = [line.strip().split()[2] for line in f.readlines()]
-                transcription = " ".join(phonemes)
+    # Load audio file if available
+    if row['is_audio']:
+        audio_path = os.path.join(data_dir, row['path_from_data_dir'])
+        waveform, sample_rate = torchaudio.load(audio_path)
+        sample['audio'] = waveform.squeeze().numpy().tolist()  # Convert tensor to list
+        sample['sample_rate'] = sample_rate
+    
+    # Load word transcription if available
+    if row['is_word_file']:
+        word_path = os.path.join(data_dir, row['path_from_data_dir'].replace(".WAV", ".WRD"))
+        with open(word_path, 'r') as f:
+            words = [line.strip().split()[2] for line in f.readlines() if len(line.split()) >= 3]  # Take the word column
+        sample['words'] = words
+    
+    return sample
 
-    return {
-        "audio": waveform,
-        "sampling_rate": 16000,
-        "transcription": transcription
-    }
-
-# Apply function to metadata DataFrame
+# Prepare dataset samples
 samples = [prepare_dataset(row) for _, row in metadata_df.iterrows() if row['is_audio']]
+
+# Create a Dataset from the samples
 timit_dataset = Dataset.from_pandas(pd.DataFrame(samples))
 
 
@@ -57,7 +53,6 @@ def preprocess(batch):
 timit_dataset = timit_dataset.map(preprocess)
 
 # Define training arguments and Trainer
-from transformers import TrainingArguments, Trainer
 
 training_args = TrainingArguments(
     output_dir="./wav2vec2_timit",
@@ -81,4 +76,4 @@ trainer = Trainer(
 # Train the model
 trainer.train()
 
-trainer.save_model("wav_to_vec_model")
+trainer.save_model("wav_to_vec_model.pth")
