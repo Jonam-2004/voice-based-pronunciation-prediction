@@ -22,7 +22,7 @@ def load_librispeech_data(dataset_path):
 
                 # Load the corresponding transcription
                 # Assuming transcription is in a `.txt` file with the same name as the audio file
-                transcription_path = audio_path.replace(".flac", ".txt")
+                transcription_path = audio_path.replace(".flac", ".wav")
                 with open(transcription_path, "r") as f:
                     text = f.readline().strip()
                 texts.append(text)
