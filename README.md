@@ -49,26 +49,6 @@ The system evaluates pronunciation using multiple metrics:
 pip install -r requirements.txt
 ```
 
-## 🚀 Usage
-
-### Real-time Voice Analysis (Quartznet)
-```python
-from quartznet_analysis import main
-main()
-```
-
-### Pre-recorded Audio Analysis (Wav2Vec2)
-```python
-from wav2vec_analysis import process_audio
-process_audio("path/to/audio.wav")
-```
-
-### HuBERT Analysis
-```python
-from hubert_analysis import analyze_audio
-analyze_audio("path/to/audio.wav")
-```
-
 ## 📊 Visualization Features
 
 1. **Pronunciation Visualization**
