@@ -128,6 +128,10 @@ We welcome contributions! To contribute:
 
 ---
 
+## Authors
+- [Manoj S](https://github.com/Jonam-2004)
+- [Mohamed Aslam K](https://github.com/Mohamedaslam227)
+  
 ## 📧 Contact
 
 For questions, suggestions, or feedback, feel free to reach out at [51manoj2004@gmail.com](mailto:51manoj2004@gmail.com), [mohamedaslam2254@gmail.com](mailto:mohamedaslam2254@gmail.com).
