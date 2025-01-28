@@ -5,9 +5,9 @@ Welcome to the **Voice Based Pronunciation Prediction** project! This tool helps
 ---
 
 ## 📋 Contents
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
+- [Introduction](#Introduction)
+- [Features](#Features)
+- [Installation](#Installation)
 - [Usage Guide](#usage-guide)
 - [Model Documentation](#model-documentation)
 - [Visualization & Feedback](#visualization--feedback)
